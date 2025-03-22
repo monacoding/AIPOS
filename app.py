@@ -11,7 +11,7 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upload
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# ✅ 선종 코드와 이름 매핑
+# ✅ 선종 코드와 이름 매핑.
 ship_types = {
     "1": "174K LNGC",
     "2": "180K LNGC",
