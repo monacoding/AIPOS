@@ -69,15 +69,22 @@ def reflect():
     if not differences:
         return "POS에 반영할 항목이 선택되지 않았습니다.", 400
 
-    pos_filename = differences[0]["POS 대상"]
-    result_path, change_log = update_pos_word_with_differences(
-        ship_type,
-        differences,
-        project_number,
-        pos_filename
-    )
-
-    return render_template("reflect_result.html", change_log=change_log, file_path=result_path)
+    # 모든 POS 파일에 대해 반복 작업을 수행하도록 수정
+    all_change_logs = []
+    result_path = None  # 초기화
+    for diff in differences:
+        pos_filename = diff["POS 대상"]
+        result_path, change_log = update_pos_word_with_differences(
+            ship_type,
+            [diff],  # 현재 diff만 전달
+            project_number,
+            pos_filename
+        )
+        if change_log:
+            all_change_logs.extend(change_log)  # 결과를 누적
+        
+    # 결과를 템플릿에 전달
+    return render_template("reflect_result.html", change_log=all_change_logs, file_path=result_path)
 
 def get_pos_docx_filenames_by_shiptype(ship_type):
     folder_path = os.path.join(POS_FOLDER, ship_type)
