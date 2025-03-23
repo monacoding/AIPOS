@@ -69,9 +69,6 @@ def highlight_diff(std_text, proj_text):
     return " ".join(highlighted_text).replace(' <br> ', '<br>')
 
 def compare_project_spec_with_standard(ship_type, proj_pdf_path, similarity_threshold=70):
-    """
-    프로젝트 사양서 PDF를 표준 사양서(DB)와 비교하여 차이점 리스트 반환
-    """
     std_specs = get_standard_spec_paragraphs(ship_type)
     std_paragraphs = [(s.section or "No Section", s.paragraph) for s in std_specs]
 
@@ -109,9 +106,10 @@ def compare_project_spec_with_standard(ship_type, proj_pdf_path, similarity_thre
                 std_section, std_para = std_paragraphs[idx]
                 diff_html = highlight_diff(std_para, proj_para)
                 if std_para.strip() != proj_para.strip():
+                    # 수정: 섹션 제목 제외, 문단 단위로 저장
                     differences.append({
                         "section": std_section,
-                        "표준 사양서": std_para,
+                        "표준 사양서": std_para,  # 섹션 제목 제외, 문단만 포함
                         "프로젝트 사양서": proj_para,
                         "비교 결과": diff_html
                     })
@@ -125,6 +123,7 @@ def compare_project_spec_with_standard(ship_type, proj_pdf_path, similarity_thre
 
     return differences
 
+    print(differences)
 if __name__ == "__main__":
     ship_type = "174K LNGC"
     test_pdf_path = "/Users/gimtaehyeong/Desktop/코딩/개발/AIPOS/DB/SPEC/STD_SPEC_4.pdf"
@@ -147,3 +146,5 @@ if __name__ == "__main__":
             print(f"📘 표준: {diff['표준 사양서']}")
             print(f"📕 프로젝트: {diff['프로젝트 사양서']}")
             print(f"📌 비교 결과: {diff['비교 결과'][:80]}...")
+  # ✅ 결과를 텍스트 파일로 저장
+       

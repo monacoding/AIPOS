@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 import os
 from dotenv import load_dotenv
 
@@ -20,13 +20,6 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_DB = os.getenv("POSTGRES_DB")
 
-# ✅ 환경변수 체크 로그
-print("📌 POSTGRES_USER:", POSTGRES_USER)
-print("📌 POSTGRES_PASSWORD:", POSTGRES_PASSWORD)
-print("📌 POSTGRES_HOST:", POSTGRES_HOST)
-print("📌 POSTGRES_PORT:", POSTGRES_PORT)
-print("📌 POSTGRES_DB:", POSTGRES_DB)
-
 # ✅ 연결 URI 구성
 DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
@@ -35,15 +28,6 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# ✅ POS 문장 비교용 모델
-class POS(Base):
-    __tablename__ = 'pos'
-
-    id = Column(Integer, primary_key=True, index=True)
-    ship_type = Column(String(50), nullable=False)
-    section = Column(Text)
-    original_text = Column(Text, nullable=False)
-
 # ✅ POS PDF 파일 경로 모델
 class POSFile(Base):
     __tablename__ = 'pos_files'
@@ -51,6 +35,29 @@ class POSFile(Base):
     id = Column(Integer, primary_key=True)
     ship_type = Column(String(50), nullable=False)
     file_path = Column(Text, nullable=False)  # 예: STD_POS_174K.pdf
+
+    paragraphs = relationship("POSParagraph", back_populates="pos_file", cascade="all, delete")
+
+# ✅ POS 문단 단위 저장 모델
+class POSParagraph(Base):
+    __tablename__ = 'pos_paragraphs'
+
+    id = Column(Integer, primary_key=True)
+    pos_file_id = Column(Integer, ForeignKey("pos_files.id"))
+    section = Column(String(100))
+    order = Column(Integer)
+    content = Column(Text, nullable=False)
+
+    pos_file = relationship("POSFile", back_populates="paragraphs")
+
+# ✅ POS 문장 비교용 모델 (구버전 호환용 - 선택적)
+class POS(Base):
+    __tablename__ = 'pos'
+
+    id = Column(Integer, primary_key=True, index=True)
+    ship_type = Column(String(50), nullable=False)
+    section = Column(Text)
+    original_text = Column(Text, nullable=False)
 
 # ✅ 표준 사양서 문단 모델
 class Spec(Base):
@@ -73,7 +80,7 @@ def get_pos_pdf_path_by_filename(ship_type, filename):
         print(f"📄 filename = '{filename}'")
         pos_file = session.query(POSFile).filter_by(ship_type=ship_type, file_path=filename).first()
         if pos_file:
-            path = os.path.join(POS_FOLDER, ship_type.replace(" ", "_"), filename)
+            path = os.path.join(POS_FOLDER, ship_type, filename)
             print(f"✅ 경로 반환: {path}")
             return path
         print("❌ POSFile DB에서 찾을 수 없음")
