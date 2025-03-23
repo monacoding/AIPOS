@@ -1,6 +1,10 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
+from dotenv import load_dotenv
+
+# ✅ .env 파일 로드
+load_dotenv()
 
 # ✅ 기본 루트 디렉토리 경로
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -9,11 +13,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 POS_FOLDER = os.path.join(BASE_DIR, "DB", "POS")
 SPEC_FOLDER = os.path.join(BASE_DIR, "DB", "SPEC")
 
-# ✅ PostgreSQL 연결 URI (.env에서 불러오기)
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:587289@localhost:5432/aipos"
-)
+# ✅ PostgreSQL 연결 환경변수 로드
+POSTGRES_USER = os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_DB = os.getenv("POSTGRES_DB")
+
+# ✅ 환경변수 체크 로그
+print("📌 POSTGRES_USER:", POSTGRES_USER)
+print("📌 POSTGRES_PASSWORD:", POSTGRES_PASSWORD)
+print("📌 POSTGRES_HOST:", POSTGRES_HOST)
+print("📌 POSTGRES_PORT:", POSTGRES_PORT)
+print("📌 POSTGRES_DB:", POSTGRES_DB)
+
+# ✅ 연결 URI 구성
+DATABASE_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 # ✅ SQLAlchemy 설정
 engine = create_engine(DATABASE_URL)
@@ -54,9 +69,14 @@ def create_tables():
 def get_pos_pdf_path_by_filename(ship_type, filename):
     session = SessionLocal()
     try:
+        print(f"📦 ship_type = '{ship_type}'")
+        print(f"📄 filename = '{filename}'")
         pos_file = session.query(POSFile).filter_by(ship_type=ship_type, file_path=filename).first()
         if pos_file:
-            return os.path.join(POS_FOLDER, ship_type.replace(" ", "_"), filename)
+            path = os.path.join(POS_FOLDER, ship_type.replace(" ", "_"), filename)
+            print(f"✅ 경로 반환: {path}")
+            return path
+        print("❌ POSFile DB에서 찾을 수 없음")
         return None
     finally:
         session.close()

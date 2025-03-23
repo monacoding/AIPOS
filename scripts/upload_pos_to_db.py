@@ -6,11 +6,11 @@ from database import SessionLocal, POSFile, create_tables, POS_FOLDER
 
 # ✅ 선종별 폴더 매핑
 ship_folder_mapping = {
-    "174K LNGC": os.path.join(POS_FOLDER, "174K_LNGC"),
-    "180K LNGC": os.path.join(POS_FOLDER, "180K_LNGC"),
-    "200K LNGC": os.path.join(POS_FOLDER, "200K_LNGC"),
-    "88K LPGC": os.path.join(POS_FOLDER, "88K_LPGC"),
-    "91K LPGC": os.path.join(POS_FOLDER, "91K_LPGC"),
+    "174K LNGC": os.path.join(POS_FOLDER, "174K LNGC"),
+    "180K LNGC": os.path.join(POS_FOLDER, "180K LNGC"),
+    "200K LNGC": os.path.join(POS_FOLDER, "200K LNGC"),
+    "88K LPGC": os.path.join(POS_FOLDER, "88K LPGC"),
+    "91K LPGC": os.path.join(POS_FOLDER, "91K LPGC"),
 }
 
 def upload_and_cleanup_pos_files():

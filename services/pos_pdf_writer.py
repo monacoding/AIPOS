@@ -1,38 +1,76 @@
-# services/pos_pdf_writer.py
-
 import os
 import fitz  # PyMuPDF
-from database import get_pos_pdf_path
+from database import POS_FOLDER
+from dotenv import load_dotenv
 
-def apply_differences_to_pos_pdf(ship_type, differences, project_number="1234"):
-    pos_pdf_path = get_pos_pdf_path(ship_type)
-    if not pos_pdf_path or not os.path.exists(pos_pdf_path):
-        print(f"❌ POS PDF 경로가 유효하지 않음: {pos_pdf_path}")
+# ✅ 환경 변수 불러오기
+load_dotenv()
+
+# ✅ 다운로드 폴더 설정
+DOWNLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "download")
+
+# ✅ 텍스트 정규화 함수
+def normalize_text(text):
+    return ' '.join(text.strip().split())
+
+def apply_differences_to_pos_pdf(ship_type, differences, project_number, pos_filename):
+    # ✅ POS 경로 설정
+    source_pdf_path = os.path.join(POS_FOLDER, ship_type, pos_filename)
+    if not os.path.exists(source_pdf_path):
+        print(f"❌ 원본 POS 파일 없음: {source_pdf_path}")
         return None
+
+    if not os.path.exists(DOWNLOAD_FOLDER):
+        os.makedirs(DOWNLOAD_FOLDER)
+
+    # ✅ 결과 파일 경로 설정
+    result_filename = pos_filename.replace("STD", project_number)
+    result_pdf_path = os.path.join(DOWNLOAD_FOLDER, result_filename)
+
+    change_log = []
 
     try:
-        doc = fitz.open(pos_pdf_path)
-
+        doc = fitz.open(source_pdf_path)
         for diff in differences:
-            target_text = diff["POS 대상"]
-            new_text = diff["프로젝트 사양서"]
-            red_bold = f"<span style='color:red;font-weight:bold'>{new_text}</span>"
+            std_text = diff["표준 사양서"]
+            proj_text = diff["프로젝트 사양서"]
 
+            # ✅ 변경 문장은 사전에 비교된 프로젝트 문장으로 바로 반영
+            new_text = proj_text.strip()
+
+            found = False
             for page in doc:
-                text_instances = page.search_for(target_text)
-                for inst in text_instances:
-                    page.add_redact_annot(inst, fill=(1, 1, 1))
+                text_instances = page.search_for(normalize_text(std_text))
+                if text_instances:
+                    for inst in text_instances:
+                        page.add_redact_annot(inst, fill=(1, 1, 1))
                     page.apply_redactions()
-                    page.insert_textbox(inst, new_text, fontsize=10, color=(1, 0, 0), fontname="helv", overlay=True)
+                    # ✅ 빨간색 볼드로 삽입
+                    page.insert_text(
+                        text_instances[0].tl,
+                        new_text,
+                        fontsize=11,
+                        color=(1, 0, 0),  # 빨간색
+                        fontname="helv",
+                        render_mode=3  # 볼드
+                    )
+                    change_log.append({
+                        "기존": std_text,
+                        "수정": new_text
+                    })
+                    found = True
+                    break
 
-        new_filename = os.path.basename(pos_pdf_path).replace("STD", project_number)
-        output_path = os.path.join(os.path.dirname(pos_pdf_path), new_filename)
-        doc.save(output_path)
+            if not found:
+                print(f"⚠️ '{std_text[:30]}...' 문구를 POS PDF에서 찾을 수 없음")
+                print("📄 페이지 텍스트:")
+                print(page.get_text())
+
+        doc.save(result_pdf_path)
         doc.close()
-
-        print(f"✅ 프로젝트 POS 저장 완료: {output_path}")
-        return output_path
+        print(f"✅ 저장 완료: {result_pdf_path}")
+        return result_pdf_path, change_log
 
     except Exception as e:
-        print(f"❌ PDF 반영 중 오류 발생: {e}")
-        return None
+        print(f"❌ PDF 반영 중 오류: {e}")
+        return None, []

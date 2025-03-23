@@ -22,19 +22,15 @@
             padding: 30px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             display: inline-block;
+            text-align: left;
+            max-width: 800px;
         }
-        .download-btn {
-            margin-top: 20px;
-            padding: 12px 24px;
-            background-color: #00bfff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            text-decoration: none;
+        .change-item {
+            margin-bottom: 20px;
         }
-        .download-btn:hover {
-            background-color: #009acd;
+        .highlight {
+            color: #ff6b6b;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -42,8 +38,18 @@
 
     <h2>📄 POS 반영 결과</h2>
     <div class="message-box">
-        <p>선택된 항목이 성공적으로 POS PDF에 반영되었습니다.</p>
-        <a href="{{ url_for('download') }}?path={{ pdf_path }}" class="download-btn">📥 다운로드</a>
+        <p>선택된 항목이 성공적으로 POS PDF에 반영되었으며,<br>지정된 다운로드 폴더에 저장되었습니다.</p>
+
+        {% if change_log %}
+            <hr>
+            <h5>🔧 반영된 변경 사항:</h5>
+            {% for item in change_log %}
+                <div class="change-item">
+                    <div><strong>기존:</strong> {{ item.기존 }}</div>
+                    <div><strong>수정:</strong> <span class="highlight">{{ item.수정 }}</span></div>
+                </div>
+            {% endfor %}
+        {% endif %}
     </div>
 
 </body>
